@@ -16,8 +16,6 @@ public class Main {
 
     public static void main(String[] args) {
         Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
         try {
             conn = DriverManager.getConnection(DB_URL, USER, PASSWORD);
             String sql =
@@ -47,12 +45,6 @@ public class Main {
             e.printStackTrace();
         } finally {
             try {
-                if (rs != null) {
-                    rs.close();
-                }
-                if (stmt != null) {
-                    stmt.close();
-                }
                 if (conn != null) {
                     conn.close();
                 }

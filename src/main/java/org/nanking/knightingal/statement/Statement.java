@@ -63,32 +63,43 @@ public class Statement {
     }
 
     public List<Object> query(Connection conn, Object param) throws Exception {
-        PreparedStatement stmt = conn.prepareStatement(sql);
-        BeanWrapper bw = new BeanWrapper(param);
-        for (int i = 0; i < paramNameTypes.size(); i++) {
-            TypeHandler typeHandler = TYPE_HANDLER_MAP.get(paramNameTypes.get(i).getParamType());
-            Object value = bw.valueByName(paramNameTypes.get(i).getParamName());
-            typeHandler.putValue(stmt, i + 1, value);
-        }
-        List<Object> resultList = new ArrayList<Object>();
-        ResultSet rs = stmt.executeQuery();
-        while (rs.next()) {
-            Object retObject = resultReflector.getConstructor().newInstance();
-            Map<String, Method> setters = resultReflector.getSetterMethod();
-            Map<String, Type> types = resultReflector.getSetterType();
-            int columnCount = rs.getMetaData().getColumnCount();
-            for (int j = 0; j < columnCount; j++) {
-                String columnName = rs.getMetaData().getColumnLabel(j + 1);
-                Method setter = setters.get(columnName);
-                Type type = types.get(columnName);
-                TypeHandler typeHandler = TYPE_HANDLER_MAP.get(type);
-                Object value = typeHandler.valueFromRs(rs, columnName);
-                setter.invoke(retObject, value);
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        try {
+            stmt = conn.prepareStatement(sql);
+            BeanWrapper bw = new BeanWrapper(param);
+            for (int i = 0; i < paramNameTypes.size(); i++) {
+                TypeHandler typeHandler = TYPE_HANDLER_MAP.get(paramNameTypes.get(i).getParamType());
+                Object value = bw.valueByName(paramNameTypes.get(i).getParamName());
+                typeHandler.putValue(stmt, i + 1, value);
             }
+            List<Object> resultList = new ArrayList<Object>();
+            rs = stmt.executeQuery();
+            while (rs.next()) {
+                Object retObject = resultReflector.getConstructor().newInstance();
+                Map<String, Method> setters = resultReflector.getSetterMethod();
+                Map<String, Type> types = resultReflector.getSetterType();
+                int columnCount = rs.getMetaData().getColumnCount();
+                for (int j = 0; j < columnCount; j++) {
+                    String columnName = rs.getMetaData().getColumnLabel(j + 1);
+                    Method setter = setters.get(columnName);
+                    Type type = types.get(columnName);
+                    TypeHandler typeHandler = TYPE_HANDLER_MAP.get(type);
+                    Object value = typeHandler.valueFromRs(rs, columnName);
+                    setter.invoke(retObject, value);
+                }
 
-            resultList.add(retObject);
+                resultList.add(retObject);
+            }
+            return resultList;
+        } finally {
+            if (stmt != null) {
+                stmt.close();
+            }
+            if (rs != null) {
+                rs.close();
+            }
         }
-        return resultList;
     }
 
     private static class ParamNameType {
