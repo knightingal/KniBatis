@@ -31,9 +31,10 @@ public class Main {
                     "from " +
                             "employees " +
                     "where " +
-                            "emp_no < #{empNo}";
+                            "emp_no < #{empNo} and gender = #{gender}";
             Employee param = new Employee();
             param.setEmpNo(10010);
+            param.setGender("M");
             Statement statement = new Statement(sql
                     ,"org.nanking.knightingal.bean.Employee"
                     ,"org.nanking.knightingal.bean.Employee");

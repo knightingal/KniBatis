@@ -28,8 +28,7 @@ public class Statement {
 
     private Reflector resultReflector;
 
-    private Map<String, Type> paramMap = new HashMap<String, Type>();
-
+    private List<ParamNameType> paramNameTypes = new ArrayList<ParamNameType>();
     public Statement(String sql, String paramClassName, String resultClassName) throws ClassNotFoundException, NoSuchMethodException {
         this.sql = sql;
         this.paramReflector = new Reflector(Thread.currentThread().getContextClassLoader().loadClass(paramClassName));
@@ -37,7 +36,7 @@ public class Statement {
         parseSql();
     }
 
-    private void parseSql() throws NoSuchMethodException {
+    private void parseSql()  {
         String openToken = "#{";
         String closeToken = "}";
         StringBuffer sb = new StringBuffer();
@@ -55,7 +54,7 @@ public class Statement {
             }
             String paramName = sql.substring(openIndex + openToken.length(), closeIndex);
             Type paramType = paramReflector.getGetterType().get(paramName);
-            paramMap.put(paramName, paramType);
+            paramNameTypes.add(new ParamNameType(paramName, paramType));
             sb.append(sql.substring(currIndex, openIndex));
             sb.append("?");
             currIndex = closeIndex + closeToken.length();
@@ -66,11 +65,10 @@ public class Statement {
     public List<Object> query(Connection conn, Object param) throws Exception {
         PreparedStatement stmt = conn.prepareStatement(sql);
         BeanWrapper bw = new BeanWrapper(param);
-        int i = 1;
-        for (Map.Entry<String, Type> entry : paramMap.entrySet()) {
-            TypeHandler typeHandler = TYPE_HANDLER_MAP.get(entry.getValue());
-            Object value = bw.valueByName(entry.getKey());
-            typeHandler.putValue(stmt, i, value);
+        for (int i = 0; i < paramNameTypes.size(); i++) {
+            TypeHandler typeHandler = TYPE_HANDLER_MAP.get(paramNameTypes.get(i).getParamType());
+            Object value = bw.valueByName(paramNameTypes.get(i).getParamName());
+            typeHandler.putValue(stmt, i + 1, value);
         }
         List<Object> resultList = new ArrayList<Object>();
         ResultSet rs = stmt.executeQuery();
@@ -91,5 +89,24 @@ public class Statement {
             resultList.add(retObject);
         }
         return resultList;
+    }
+
+    private static class ParamNameType {
+        private String paramName;
+
+        private Type paramType;
+
+        public ParamNameType(String paramName, Type paramType) {
+            this.paramName = paramName;
+            this.paramType = paramType;
+        }
+
+        public String getParamName() {
+            return paramName;
+        }
+
+        public Type getParamType() {
+            return paramType;
+        }
     }
 }
