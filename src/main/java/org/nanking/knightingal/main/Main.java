@@ -33,9 +33,9 @@ public class Main {
             Employee param = new Employee();
             param.setEmpNo(10010);
             param.setGender("M");
-            Statement statement = new Statement(sql
-                    ,"org.nanking.knightingal.bean.Employee"
-                    ,"org.nanking.knightingal.bean.Employee");
+            Statement statement = new Statement(sql,
+                    "org.nanking.knightingal.bean.Employee",
+                    "org.nanking.knightingal.bean.Employee");
             List<Object> resultList = statement.query(conn, param);
             for (Object ret : resultList) {
                 System.out.println(ret);
